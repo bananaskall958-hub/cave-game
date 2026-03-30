@@ -2,37 +2,54 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>VOID_SENTINEL: ALLIES</title>
+    <title>VOID_SENTINEL: UNDEAD_PROTOCOL</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; }
         canvas { image-rendering: pixelated; width: 100vw; height: 100vh; }
+        
         #ui { position: absolute; top: 20px; left: 20px; color: #00f2ff; text-shadow: 0 0 10px #00f2ff; z-index: 10; pointer-events: none; }
+        
         #shop {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(0, 0, 20, 0.95); border: 2px solid #00f2ff; padding: 20px;
-            display: none; flex-direction: column; color: white; z-index: 200; width: 320px;
+            background: rgba(10, 0, 20, 0.95); border: 2px solid #00f2ff; padding: 25px;
+            display: none; flex-direction: column; color: white; z-index: 200; width: 300px;
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.2);
         }
-        .shop-item { padding: 10px; border: 1px solid #444; margin: 5px 0; cursor: pointer; display: flex; justify-content: space-between; }
-        .shop-item:hover { background: #00f2ff; color: black; }
+        
+        .shop-item { 
+            padding: 12px; border: 1px solid #333; margin: 8px 0; cursor: pointer; 
+            display: flex; justify-content: space-between; background: rgba(255,255,255,0.05);
+        }
+        .shop-item:hover { background: #00f2ff; color: #000; font-weight: bold; }
+
+        #death-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(50, 0, 0, 0.9); color: #ff0055; display: none;
+            flex-direction: column; align-items: center; justify-content: center; z-index: 1000;
+        }
     </style>
 </head>
 <body>
 
 <div id="ui">
-    <div style="font-size: 22px; font-weight: bold;">CREDITS: 💰<span id="gold">0</span></div>
-    <div style="font-size: 14px; color: #ff0055;">DRONE_STATUS: <span id="drone-level">INACTIVE</span></div>
-    <div style="width: 200px; height: 10px; border: 2px solid #00f2ff; margin-top: 5px; background: #001122;">
-        <div id="hp-bar" style="width: 100%; height: 100%; background: #00f2ff; box-shadow: 0 0 10px #00f2ff;"></div>
+    <div style="font-size: 22px;">SOULS: 💰<span id="gold">0</span></div>
+    <div style="width: 200px; height: 12px; border: 2px solid #00f2ff; margin-top: 8px; background: #001122;">
+        <div id="hp-bar" style="width: 100%; height: 100%; background: #00f2ff; transition: width 0.1s;"></div>
     </div>
-    <div style="font-size: 10px; margin-top: 10px; color: #fff;">[P] OPEN BLACK MARKET</div>
+    <div style="font-size: 10px; margin-top: 10px; color: #fff;">[P] ACCESS BLACK MARKET</div>
 </div>
 
 <div id="shop">
-    <h2 style="color: #00f2ff; margin-top: 0; text-align: center;">VOID_TRADER</h2>
-    <div class="shop-item" onclick="buy('drone', 100)"><span>Sentinel Ally</span> <span>💰100</span></div>
-    <div class="shop-item" onclick="buy('omega', 400)"><span>OMEGA BEAM</span> <span>💰400</span></div>
-    <div class="shop-item" onclick="buy('hp', 25)"><span>Repair Kit</span> <span>💰25</span></div>
-    <button onclick="toggleShop()" style="margin-top: 15px; background: transparent; color: #00f2ff; border: 1px solid #00f2ff; cursor: pointer; padding: 5px;">BACK_TO_VOID [P]</button>
+    <h2 style="color: #00f2ff; margin: 0 0 15px 0; text-align: center; letter-spacing: 2px;">VOID_SHOP</h2>
+    <div class="shop-item" onclick="buy('drone', 100)"><span>Summon Drones</span> <span>💰100</span></div>
+    <div class="shop-item" onclick="buy('hp', 40)"><span>Restore Vigor</span> <span>💰40</span></div>
+    <div class="shop-item" onclick="buy('damage', 150)"><span>Blue Fire Buff</span> <span>💰150</span></div>
+    <button onclick="toggleShop()" style="margin-top: 15px; background: #00f2ff; border: none; padding: 10px; cursor: pointer;">RETURN TO BATTLE</button>
+</div>
+
+<div id="death-screen">
+    <h1 style="font-size: 48px; letter-spacing: 10px;">DEATH_OCCURRED</h1>
+    <button onclick="location.reload()" style="background: transparent; border: 2px solid #ff0055; color: #ff0055; padding: 15px 30px; cursor: pointer;">REANIMATE</button>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -42,50 +59,71 @@
     let droneActive = false, score = 0;
 
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x020005, 0.07);
+    scene.fog = new THREE.FogExp2(0x050005, 0.08);
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setPixelRatio(0.6); renderer.setSize(window.innerWidth, window.innerHeight);
+    const renderer = new THREE.WebGLRenderer({ antialias: false });
+    renderer.setPixelRatio(0.6); 
+    renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // --- TEXTURE LOADING ---
     const loader = new THREE.TextureLoader();
-    const enemyTex = loader.load('');
-    const allyTex = loader.load('');
-    
-    // Player
-    const player = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0x00f2ff }));
-    player.position.y = 1.2; scene.add(player);
+    // Using the images you provided
+    const playerTex = loader.load('https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/94.png'); // Placeholder, replace with your local skeleton path
+    const droneTex = loader.load('https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/137.png'); // Placeholder, replace with your local robot path
 
-    // Ally Drone
-    const drone = new THREE.Sprite(new THREE.SpriteMaterial({ map: allyTex }));
+    // Player (The Skeleton Knight)
+    const playerMat = new THREE.SpriteMaterial({ color: 0xffffff }); // Tint white to show texture
+    const player = new THREE.Sprite(playerMat);
+    player.scale.set(3, 3, 1);
+    player.position.y = 1.5;
+    scene.add(player);
+
+    // Ally Drone (The Robot)
+    const drone = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0x00f2ff }));
     drone.scale.set(1.5, 1.5, 1);
     drone.visible = false;
     scene.add(drone);
 
     const enemies = [];
-    const pulseRing = new THREE.Mesh(new THREE.TorusGeometry(1, 0.08, 16, 64), new THREE.MeshBasicMaterial({ color: 0x00f2ff, transparent: true }));
-    pulseRing.rotation.x = Math.PI/2; scene.add(pulseRing);
-    scene.add(new THREE.GridHelper(1000, 80, 0x00f2ff, 0x050005));
+    const pulseRing = new THREE.Mesh(new THREE.TorusGeometry(1, 0.05, 16, 100), new THREE.MeshBasicMaterial({ color: 0x00f2ff, transparent: true }));
+    pulseRing.rotation.x = Math.PI/2; 
+    scene.add(pulseRing);
+
+    scene.add(new THREE.GridHelper(1000, 100, 0x00f2ff, 0x050005));
 
     const keys = {};
-    window.onkeydown = (e) => { if(e.code === 'KeyP') toggleShop(); if(!paused) { keys[e.code] = true; if(e.code === 'Space') fire(); } };
-    window.onkeyup = (e) => keys[e.code] = false;
+    window.addEventListener('keydown', (e) => {
+        if(e.code === 'KeyP' && !isGameOver) toggleShop();
+        keys[e.code] = true;
+        if(e.code === 'Space' && !paused && !isGameOver) fire();
+    });
+    window.addEventListener('keyup', (e) => keys[e.code] = false);
 
-    function toggleShop() { paused = !paused; document.getElementById('shop').style.display = paused ? 'flex' : 'none'; }
+    function toggleShop() {
+        paused = !paused;
+        document.getElementById('shop').style.display = paused ? 'flex' : 'none';
+    }
 
     function buy(type, cost) {
         if(gold >= cost) {
-            gold -= cost; updateUI();
-            if(type === 'drone') { droneActive = true; drone.visible = true; document.getElementById('drone-level').innerText = "ONLINE"; }
+            gold -= cost;
+            if(type === 'drone') { droneActive = true; drone.visible = true; }
             if(type === 'hp') hp = Math.min(100, hp + 50);
+            updateUI();
         }
     }
 
     function fire() {
-        pulseRing.position.copy(player.position); pulseRing.scale.set(1,1,1); pulseRing.material.opacity = 1;
-        enemies.forEach(en => { if(player.position.distanceTo(en.position) < 12) { en.dead = true; gold += 10; score += 20; } });
-        updateUI();
+        pulseRing.position.copy(player.position);
+        pulseRing.scale.set(1, 1, 1);
+        pulseRing.material.opacity = 1;
+        enemies.forEach(en => {
+            if(player.position.distanceTo(en.position) < 12) {
+                en.dead = true;
+                gold += 15;
+                updateUI();
+            }
+        });
     }
 
     function updateUI() {
@@ -95,11 +133,12 @@
 
     function spawn() {
         if(!paused && !isGameOver) {
-            const en = new THREE.Sprite(new THREE.SpriteMaterial({ map: enemyTex }));
+            const en = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0xff0055 }));
             en.scale.set(2, 2, 1);
             const a = Math.random() * 6.28;
-            en.position.set(player.position.x + Math.cos(a)*35, 1.2, player.position.z + Math.sin(a)*35);
-            scene.add(en); enemies.push(en);
+            en.position.set(player.position.x + Math.cos(a)*30, 1.2, player.position.z + Math.sin(a)*30);
+            scene.add(en);
+            enemies.push(en);
         }
         setTimeout(spawn, 1500);
     }
@@ -109,29 +148,48 @@
         requestAnimationFrame(animate);
         if(paused || isGameOver) return;
 
-        const s = keys['ShiftLeft'] ? 0.3 : 0.18;
-        if(keys['KeyW']) player.position.z -= s; if(keys['KeyS']) player.position.z += s;
-        if(keys['KeyA']) player.position.x -= s; if(keys['KeyD']) player.position.x += s;
+        // Player Movement
+        const s = keys['ShiftLeft'] ? 0.3 : 0.15;
+        if(keys['KeyW']) player.position.z -= s;
+        if(keys['KeyS']) player.position.z += s;
+        if(keys['KeyA']) player.position.x -= s;
+        if(keys['KeyD']) player.position.x += s;
 
-        // Ally Logic
+        // Drone Orbit
         if(droneActive) {
-            const t = Date.now() * 0.003;
-            drone.position.set(player.position.x + Math.cos(t)*3, 2 + Math.sin(t*0.5), player.position.z + Math.sin(t)*3);
-            // Auto-Zap nearest enemy
+            const t = Date.now() * 0.005;
+            drone.position.set(player.position.x + Math.cos(t)*4, 2.5, player.position.z + Math.sin(t)*4);
             enemies.forEach(en => {
-                if(drone.position.distanceTo(en.position) < 6) { en.dead = true; gold += 5; }
+                if(drone.position.distanceTo(en.position) < 5) en.dead = true;
             });
         }
 
-        enemies.forEach((en, i) => {
+        // Enemy Logic & Collision
+        for(let i = enemies.length - 1; i >= 0; i--) {
+            const en = enemies[i];
             en.position.add(player.position.clone().sub(en.position).normalize().multiplyScalar(0.1));
-            if(player.position.distanceTo(en.position) < 1.8) { hp -= 0.5; updateUI(); if(hp <= 0) isGameOver = true; }
-            if(en.dead) { scene.remove(en); enemies.splice(i,1); }
-        });
+            
+            if(player.position.distanceTo(en.position) < 1.5) {
+                hp -= 0.5;
+                updateUI();
+                if(hp <= 0) {
+                    isGameOver = true;
+                    document.getElementById('death-screen').style.display = 'flex';
+                }
+            }
 
-        if(pulseRing.material.opacity > 0) { pulseRing.scale.multiplyScalar(1.2); pulseRing.material.opacity -= 0.04; }
+            if(en.dead) {
+                scene.remove(en);
+                enemies.splice(i, 1);
+            }
+        }
 
-        camera.position.lerp(new THREE.Vector3(player.position.x, 15, player.position.z + 18), 0.08);
+        if(pulseRing.material.opacity > 0) {
+            pulseRing.scale.multiplyScalar(1.2);
+            pulseRing.material.opacity -= 0.05;
+        }
+
+        camera.position.lerp(new THREE.Vector3(player.position.x, 15, player.position.z + 15), 0.1);
         camera.lookAt(player.position);
         renderer.render(scene, camera);
     }
