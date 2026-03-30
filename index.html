@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mango Isle 3D</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #87CEEB; font-family: sans-serif; }
+        #ui { position: absolute; top: 20px; left: 20px; color: white; text-shadow: 2px 2px 4px #000; pointer-events: none; }
+        #controls { position: absolute; bottom: 20px; left: 20px; color: white; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <h1>MANGO ISLE</h1>
+        <p>Mangoes Collected: <span id="score">0</span></p>
+    </div>
+    <div id="controls">Use <b>WASD</b> or <b>Arrows</b> to move | Walk into trees to harvest!</div>
+
+    <script type="importmap">
+        { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // --- Setup Scene ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // --- Lighting ---
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(5, 10, 7.5);
+        scene.add(light);
+        scene.add(new THREE.AmbientLight(0x404040));
+
+        // --- The Island ---
+        const islandGeo = new THREE.CylinderGeometry(15, 18, 2, 32);
+        const islandMat = new THREE.MeshStandardMaterial({ color: 0x7cfc00 });
+        const island = new THREE.Mesh(islandGeo, islandMat);
+        island.position.y = -1;
+        scene.add(island);
+
+        // --- Mango Trees ---
+        const trees = [];
+        function createTree(x, z) {
+            const group = new THREE.Group();
+            // Trunk
+            const trunk = new THREE.Mesh(new THREE.BoxGeometry(0.5, 2, 0.5), new THREE.MeshStandardMaterial({ color: 0x8B4513 }));
+            trunk.position.y = 1;
+            group.add(trunk);
+            // Leaves
+            const leaves = new THREE.Mesh(new THREE.SphereGeometry(1.2, 8, 8), new THREE.MeshStandardMaterial({ color: 0x228B22 }));
+            leaves.position.y = 2.5;
+            group.add(leaves);
+            // Mangoes (small orange dots)
+            const mango = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), new THREE.MeshStandardMaterial({ color: 0xffa500 }));
+            mango.position.set(0.5, 2.2, 0.5);
+            group.add(mango);
+
+            group.position.set(x, 0, z);
+            scene.add(group);
+            trees.push(group);
+        }
+
+        // Spawn trees randomly
+        for(let i=0; i<15; i++) {
+            createTree(Math.random()*20-10, Math.random()*20-10);
+        }
+
+        // --- Player ---
+        const player = new THREE.Mesh(new THREE.CapsuleGeometry(0.4, 1, 4, 8), new THREE.MeshStandardMaterial({ color: 0xff0000 }));
+        player.position.y = 1;
+        scene.add(player);
+
+        camera.position.set(0, 10, 15);
+        camera.lookAt(player.position);
+
+        // --- Movement Logic ---
+        const keys = {};
+        let score = 0;
+        window.addEventListener('keydown', (e) => keys[e.code] = true);
+        window.addEventListener('keyup', (e) => keys[e.code] = false);
+
+        function update() {
+            const speed = 0.1;
+            if (keys['KeyW'] || keys['ArrowUp']) player.position.z -= speed;
+            if (keys['KeyS'] || keys['ArrowDown']) player.position.z += speed;
+            if (keys['KeyA'] || keys['ArrowLeft']) player.position.x -= speed;
+            if (keys['KeyD'] || keys['ArrowRight']) player.position.x += speed;
+
+            // Simple Collision & Collection
+            trees.forEach((tree, index) => {
+                const dist = player.position.distanceTo(tree.position);
+                if (dist < 1.5) {
+                    score++;
+                    document.getElementById('score').innerText = score;
+                    scene.remove(tree);
+                    trees.splice(index, 1);
+                }
+            });
+
+            camera.position.x = player.position.x;
+            camera.position.z = player.position.z + 15;
+            camera.lookAt(player.position);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
